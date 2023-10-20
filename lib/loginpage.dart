@@ -165,14 +165,6 @@ Widget CustomElevatedbutton ({
         password=PasswordController.text;
         Checker(email,password,context);
 
-
-
-
-
-
-
-
-
       }
       else if(cat==2){
 
@@ -268,19 +260,6 @@ Future<void> loginuser(String email, String pasword,BuildContext context) async 
         backgroundColor: Colors.red,
       ),
     );
-
-
-
-
-
   }
-
-
-
-
-
-
-
-
 
 }

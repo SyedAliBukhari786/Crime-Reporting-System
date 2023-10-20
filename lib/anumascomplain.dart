@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'dashboard.dart';
 
@@ -13,7 +15,6 @@ class Anonymously extends StatefulWidget {
 class _AnonymouslyState extends State<Anonymously> {
   TextEditingController AreaController = TextEditingController();
   TextEditingController DescriptionController = TextEditingController();
-
 
   @override
   Widget build(BuildContext context) {
@@ -30,44 +31,68 @@ class _AnonymouslyState extends State<Anonymously> {
                   'assets/security.png', // Replace with your image path
                   height: 200, // Adjust the height as needed
                 ),
-                SizedBox(height: 10), 
-                
-                Text(" Enter your complain Anonymously.\n None of your information will be \n shared to Authorities" ,style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),// Add some spacing
+                SizedBox(height: 10),
+                Text(
+                  "Enter your complain Anonymously.\nNone of your information will be shared to Authorities",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
 
                 // Text Field 1
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.5),
-                        spreadRadius: 2,
-                        blurRadius: 5,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.location_on, color: Colors.green),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: AreaController,
-                          decoration: InputDecoration(
-                            labelText: "Area of Complain",
-                            labelStyle: TextStyle(color: Colors.green),
-                            border: InputBorder.none,
+                InkWell(
+                  onTap: () async {
+                    final googleMapsUrl = "https://www.google.com/maps";
+                    if (await canLaunch(googleMapsUrl)) {
+                      await launch(googleMapsUrl);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Could not open Google Maps",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                            ),
                           ),
-                          style: TextStyle(color: Colors.black),
+                          backgroundColor: Colors.red,
                         ),
-                      ),
-                    ],
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.5),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.green),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: AreaController,
+                            decoration: InputDecoration(
+                              labelText: "Area of Complain",
+                              labelStyle: TextStyle(color: Colors.green),
+                              border: InputBorder.none,
+                            ),
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                SizedBox(height: 10), // Add some spacing
+                SizedBox(height: 10),
 
                 // Text Field 2
                 Container(
@@ -104,6 +129,7 @@ class _AnonymouslyState extends State<Anonymously> {
                   ),
                 ),
                 SizedBox(height: 10),
+
                 CustomElevatedbutton(
                   context: context,
                   height: 45,
@@ -125,6 +151,9 @@ class _AnonymouslyState extends State<Anonymously> {
     );
   }
 }
+
+// The CustomElevatedbutton widget remains the same.
+
 
 Widget CustomElevatedbutton({
   required BuildContext context,
@@ -201,26 +230,52 @@ Widget CustomElevatedbutton({
          );
        }
        else{
+         Timestamp timestamp = Timestamp.now();
 
          Map<String, dynamic> userData = {
-           'Area':  area,
+           'Area': area,
            'Complaindescriprtion': complaindetails,
-
+           'Timestamp': timestamp,
+           'Status': "PENDING",
          };
-         FirebaseFirestore firestore=FirebaseFirestore.instance;
-         firestore.collection("Anonymous").add(userData);
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-             content: Text(
-               "Complain Submitted",
-               textAlign: TextAlign.center,
-               style: TextStyle(
-                 color: Colors.white,
+
+         FirebaseFirestore firestore = FirebaseFirestore.instance;
+         CollectionReference anonymousCollection = firestore.collection("Anonymous");
+
+         anonymousCollection.add(userData).then((DocumentReference docRef) {
+           String docId = docRef.id; // Get the document ID
+           showDialog(
+             context: context,
+             builder: (context) => AlertDialog(
+               title: Text("Complain Submitted"),
+               content: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: <Widget>[
+                   Text("TRACKING ID: $docId"),
+                 ],
                ),
+               actions: <Widget>[
+                 TextButton(
+                   onPressed: () {
+                     // Copy the document ID to the clipboard
+                     Clipboard.setData(ClipboardData(text: docId));
+                     Navigator.of(context).pop();
+                   },
+                   child: Text("Copy"),
+                 ),
+                 TextButton(
+                   onPressed: () {
+                     Navigator.of(context).pop();
+                   },
+                   child: Text("Cancel"),
+                 ),
+               ],
              ),
-             backgroundColor: Colors.green,
-           ),
-         );
+           );
+         }).catchError((error) {
+           print("Error submitting complaint: $error");
+           // Handle the error
+         });
 
 
        }

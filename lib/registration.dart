@@ -1,11 +1,15 @@
-import 'dart:js';
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:html';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:image_picker/image_picker.dart';
 
 import 'dashboard.dart';
 
@@ -25,16 +29,89 @@ class _RegistrationState extends State<Registration> {
   TextEditingController emailcontroller = TextEditingController();
   TextEditingController passwordcontroller = TextEditingController();
   TextEditingController confirmpasswordcontroller = TextEditingController();
+  html.File? boo2;
+  String _fileUrl = '';
+  html.File? boo1;
+  String _fileUrl2 = '';
+
+  Future<void> _uploadToFirebase(
+      html.File file,
+      html.File file2,
+      String name,
+      String phoneno,
+      String address,
+      String city,
+      String dob,
+      String email,
+      String password,
+      String confirmpassword) async {
+    final storage = FirebaseStorage.instance;
+    final ref = storage.ref().child('/${file.name}');
+    await ref.putBlob(file);
+
+    final url = await ref.getDownloadURL();
+
+    setState(() {
+      _fileUrl = url;
+    });
+
+    final storage2 = FirebaseStorage.instance;
+    final ref2 = storage2.ref().child('/${file2.name}');
+    await ref2.putBlob(file2);
+
+    final url2 = await ref2.getDownloadURL();
+
+    setState(() {
+      _fileUrl2 = url2;
+    });
+
+    // isUploading ? null : uploadImages(name,phoneno,address,city,dob,email,password,confirmpassword);
 
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registring User',
+            textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green, // You can choose your preferred color
+      ),
+    );
+    FirebaseAuth _auth = FirebaseAuth.instance;
+    final UserCredential userCredential = await _auth
+        .createUserWithEmailAndPassword(email: email, password: password);
+    String? Userid;
+    final User? user = userCredential.user;
+    Userid = user?.uid;
+
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    Map<String, dynamic> userData = {
+      'Name': name,
+      'Contact': phoneno,
+      'Address': address,
+      'City': city,
+      'Date_of_Birth': dob,
+      'ID_CARD_FRONT_SIDE': _fileUrl,
+      'ID_CARD_BACK_SIDE': _fileUrl2,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registration Completed',
+            textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green, // You can choose your preferred color
+      ),
+    );
+
+    await firestore
+        .collection("Users")
+        .doc(Userid)
+        .set(userData, SetOptions(merge: true));
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => Dashboard(),
+      ),
+    );
 
 
-
-
-
-
-
-
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +162,6 @@ class _RegistrationState extends State<Registration> {
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
-
                       child: TextField(
                         controller: namecontroller,
                         decoration: InputDecoration(
@@ -123,12 +199,12 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           prefixIcon: Icon(Icons.call, color: Colors.green),
@@ -138,11 +214,12 @@ class _RegistrationState extends State<Registration> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                     ),
-                  ), Padding(
+                  ),
+                  Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
                       child: TextField(
-                        controller:citycontroller,
+                        controller: citycontroller,
                         decoration: InputDecoration(
                           labelText: "City",
                           filled: true,
@@ -150,15 +227,16 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
-                          prefixIcon: Icon(Icons.location_city, color: Colors.green),
+                          prefixIcon:
+                              Icon(Icons.location_city, color: Colors.green),
                         ),
                         style: TextStyle(color: Colors.blue),
                         obscureText: false,
@@ -178,15 +256,16 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
-                          prefixIcon: Icon(Icons.location_on, color: Colors.green),
+                          prefixIcon:
+                              Icon(Icons.location_on, color: Colors.green),
                         ),
                         style: TextStyle(color: Colors.blue),
                         obscureText: false,
@@ -194,13 +273,6 @@ class _RegistrationState extends State<Registration> {
                       ),
                     ),
                   ),
-
-
-
-
-
-
-
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
@@ -213,15 +285,16 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
-                          prefixIcon: Icon(Icons.calendar_month, color: Colors.green),
+                          prefixIcon:
+                              Icon(Icons.calendar_month, color: Colors.green),
                         ),
                         style: TextStyle(color: Colors.blue),
                         obscureText: false,
@@ -229,8 +302,6 @@ class _RegistrationState extends State<Registration> {
                       ),
                     ),
                   ),
-
-
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
@@ -243,12 +314,12 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           prefixIcon: Icon(Icons.email, color: Colors.green),
@@ -271,12 +342,12 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           prefixIcon: Icon(Icons.lock, color: Colors.green),
@@ -286,7 +357,8 @@ class _RegistrationState extends State<Registration> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                     ),
-                  ), Padding(
+                  ),
+                  Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
                       child: TextField(
@@ -298,12 +370,12 @@ class _RegistrationState extends State<Registration> {
                           labelStyle: TextStyle(color: Colors.black),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide:
-                            BorderSide(color: Colors.green, width: 2.0),
+                                BorderSide(color: Colors.green, width: 2.0),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                           prefixIcon: Icon(Icons.lock, color: Colors.green),
@@ -316,8 +388,21 @@ class _RegistrationState extends State<Registration> {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                        height: 200, child: Image.asset('assets/addphoto.png')),
+                    child: GestureDetector(
+                      onTap: () async {
+                        final input = html.FileUploadInputElement();
+                        input.accept = 'image/*';
+                        input.click();
+                        await input.onChange.first;
+                        final file = input.files!.first;
+                        setState(() {
+                          boo1 = file;
+                        });
+                      },
+                      child: (boo1 != null)
+                          ? Image.asset("assets/check-mark.png")
+                          : Image.asset("assets/addphoto.png"),
+                    ),
                   ),
                   Text(
                     "Upload photo of front side of cnic",
@@ -328,8 +413,21 @@ class _RegistrationState extends State<Registration> {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                        height: 200, child: Image.asset('assets/addphoto.png')),
+                    child: GestureDetector(
+                      onTap: () async {
+                        final input = html.FileUploadInputElement();
+                        input.accept = 'image/*';
+                        input.click();
+                        await input.onChange.first;
+                        final file = input.files!.first;
+                        setState(() {
+                          boo2 = file;
+                        });
+                      },
+                      child: (boo2 != null)
+                          ? Image.asset("assets/check-mark.png")
+                          : Image.asset("assets/addphoto.png"),
+                    ),
                   ),
                   Text(
                     "Upload photo of back side of cnic",
@@ -338,9 +436,200 @@ class _RegistrationState extends State<Registration> {
                   SizedBox(
                     height: 10,
                   ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.14,
+                    height: 45,
+                    //  CustomElevatedbutton(context: context, height:45, width: 0.14,
+                    //  label: "Register", Buttoncolor: Colors.green[600]!, Textcolor:  Colors.white, radius:
+                    //  8.0, namecontroller: namecontroller, phonecontroller:
+                    //  phonecontroller, citycontroller: citycontroller, addresscontroller: addresscontroller,
+                    //  dobcontroller: dobcontroller, emailcontroller: emailcontroller, passwordcontroller:
+                    //  passwordcontroller, confirmpasswordcontroller: confirmpasswordcontroller),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        String name = namecontroller.text;
+                        String phoneno = phonecontroller.text;
+                        String address = addresscontroller.text;
+                        String city = citycontroller.text;
+                        String dob = dobcontroller.text;
+                        String email = emailcontroller.text;
+                        String password = passwordcontroller.text;
+                        String confirmpassword = confirmpasswordcontroller.text;
+                        if (name.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(' Please Enter Name',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (phoneno.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Contact Details',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (address.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Your  Address',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (dob.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Your Date of Birth',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (email.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Valid Email Address',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (city.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Please Enter City",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (password.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Password',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (confirmpassword.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Confirm Your Password',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (phoneno.length < 11) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Enter Valid Phone Number',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (password.length < 8) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please Create a Strong Password',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (password != confirmpassword) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Password not matched',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (boo1 == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Please provide front side photo of your cnic',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else if (boo2 == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'please provide back side photo of your cnic',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .red, // You can choose your preferred color
+                            ),
+                          );
+                        } else {
+                          // isUploading ? null : uploadImages(name,phoneno,address,city,dob,email,password,confirmpassword);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Uploading photos',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: Colors
+                                  .green, // You can choose your preferred color
+                            ),
+                          );
 
-                  CustomElevatedbutton(context: context, height:45, width: 0.14, label: "Register", Buttoncolor: Colors.green[600]!, Textcolor:  Colors.white, radius:  8.0, namecontroller: namecontroller, phonecontroller: phonecontroller, citycontroller: citycontroller, addresscontroller: addresscontroller, dobcontroller: dobcontroller, emailcontroller: emailcontroller, passwordcontroller: passwordcontroller, confirmpasswordcontroller: confirmpasswordcontroller),
+                          _uploadToFirebase(
+                              boo1!,
+                              boo2!,
+                              name,
+                              phoneno,
+                              address,
+                              city,
+                              dob,
+                              email,
+                              password,
+                              confirmpassword);
 
+
+                      
+                        }
+                      },
+                      child: Text(
+                        "Register",
+                        style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.green[600]!,
+                        onPrimary: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0)),
+                      ),
+                    ),
+                  )
                 ],
               ),
             ),
@@ -350,272 +639,3 @@ class _RegistrationState extends State<Registration> {
     );
   }
 }
-
-// Helper function to create a styled text field
-/*Widget _buildTextField(String labelText, IconData icon) {
-  return Padding(
-    padding: const EdgeInsets.all(8.0),
-    child: Container(
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: labelText,
-          filled: true,
-          fillColor: Colors.white,
-          labelStyle: TextStyle(color: Colors.black),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green, width: 2.0),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green, width: 2.0),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          prefixIcon: Icon(icon, color: Colors.green),
-        ),
-        style: TextStyle(color: Colors.blue),
-        obscureText: false,
-        keyboardType: TextInputType.emailAddress,
-      ),
-    ),
-  );
-}*/
-
-// City Dropdown widget remains the same as in your previous
-Widget CustomElevatedbutton({
-  required BuildContext context,
-  required double height,
-  required double width,
-  required String label,
-
-  required Color Buttoncolor,
-  required Color Textcolor,
-  required double radius,
-  required TextEditingController namecontroller ,
-  required TextEditingController phonecontroller ,
-  required TextEditingController citycontroller ,
-  required TextEditingController addresscontroller ,
-  required TextEditingController dobcontroller ,
-  required TextEditingController emailcontroller ,
-  required TextEditingController passwordcontroller ,
-  required TextEditingController confirmpasswordcontroller ,
-
-}) {
-  return SizedBox(
-      width: MediaQuery.of(context).size.width * width,
-      height: height,
-      child: ElevatedButton(
-        onPressed: () {
-          //here
-          String name=namecontroller.text;
-          String  phoneno=phonecontroller.text;
-          String address=addresscontroller.text;
-          String city=citycontroller.text;
-          String dob=dobcontroller.text;
-          String email=emailcontroller.text;
-          String password=passwordcontroller.text;
-          String confirmpassword=confirmpasswordcontroller.text;
-          if(name.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(' Please Enter Name',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          } else if(phoneno.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Contact Details',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(address.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Your  Address',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(dob.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Your Date of Birth',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(email.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Valid Email Address',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(city.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Please Enter City",
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(password.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Password',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(confirmpassword.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Confirm Your Password',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(phoneno.length<11) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Enter Valid Phone Number',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else if(password.length<8) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please Create a Strong Password',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }  else if(password != confirmpassword) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Password not matched',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red, // You can choose your preferred color
-              ),
-            );
-          }
-          else {
-            RegisterUser(name,phoneno,address,city,dob,email,password,confirmpassword,context);
-
-
-
-
-
-
-          }
-
-
-
-
-
-
-
-
-
-          },
-        child: Text(
-          label,
-          style: TextStyle(
-              fontSize: 18, color: Textcolor, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          primary: Buttoncolor,
-          onPrimary: Textcolor,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(radius)),
-        ),
-      ));
-}
-
-Future<void>  RegisterUser(String name, String phoneno, String address, String city, String dob, String email, String password, String confirmpassword,BuildContext context) async{
-
-  FirebaseAuth _auth = FirebaseAuth.instance;
-  String? Userid;
-  try {
-    final UserCredential  userCredential=await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    final User? user = userCredential.user;
-    Userid=user?.uid;
-
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-    Map<String, dynamic> userData = {
-      'Name': name,
-      'Contact': phoneno,
-      'Address': address,
-      'City': city,
-      'Date_of_Birth': dob,
-
-    };
-    firestore.collection("Users").doc(Userid).set(userData, SetOptions(merge: true)).then((value) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => Dashboard(), // Replace 'Dashboard' with the actual name of your Dashboard widget class
-        ),
-      );
-
-
-
-    }) .catchError((error) {
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$error',
-              textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red, // You can choose your preferred color
-        ),
-      );
-
-
-    });
-       
-     
-
-
-
-
-  }
-
-
-
-  catch(e) {
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$e',
-            textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red, // You can choose your preferred color
-      ),
-    );
-
-
-  }
-
-
-
-
-
-
-
-
-
-
-}
-
-

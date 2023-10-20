@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crimereportingsystem/previousrecords.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'anumascomplain.dart';
 import 'complainregistration.dart';
+import 'complaintracking.dart';
+import 'loginpage.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -16,8 +19,33 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     User? userId  = FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // User is logged in, navigate to the dashboard
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ComplainSubmission()));
+    }
     String? uid=userId?.uid;
+
+
     TextEditingController FeedBackcontroller=TextEditingController();
+    String? _currentUsername;
+    void _fetchCurrentUsername() async {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance.collection("Users").doc(user.uid).get();
+        if (userDoc.exists) {
+          setState(() {
+            _currentUsername = userDoc.get("Name");
+          });
+        }
+      }
+    }
+    _fetchCurrentUsername();
+
+    void _logOut() async {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Loginpage()));
+    }
     return Scaffold(
       backgroundColor: Colors.grey[100],
       // backgroundColor: Colors.white,
@@ -44,14 +72,14 @@ class _DashboardState extends State<Dashboard> {
                         left: 15,
                         child: CircleAvatar(
                           radius: 50,
-                          // backgroundImage: AssetImage('assets/user_photo.jpg'), // Replace with your user's photo
+                           backgroundImage: AssetImage('assets/shield.png'), // Replace with your user's photo
                         ),
                       ),
                       Positioned(
                         bottom: 15,
                         left: 15,
                         child: Text(
-                          'User Name',
+                          '',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -63,16 +91,11 @@ class _DashboardState extends State<Dashboard> {
                   ),
                 ),
               ),
-              ListTile(
-                title: Text('Edit profile'),
-                onTap: () {
-                  // Handle the item 1 tap action here
-                },
-              ),
+
               ListTile(
                 title: Text('Log out'),
                 onTap: () {
-                  // Handle the item 2 tap action here
+                  _logOut();
                 },
               ),
             ],
@@ -103,7 +126,7 @@ class _DashboardState extends State<Dashboard> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Container(
-                          //  margin: const EdgeInsets.symmetric(horizontal: 16), // Add horizontal margin
+                          //  margin:  const EdgeInsets.symmetric(horizontal: 16), // Add horizontal margin
                           width: MediaQuery.of(context).size.width *
                               0.9, // Adjust the width as needed
                           child: Text(
@@ -256,10 +279,11 @@ class _DashboardState extends State<Dashboard> {
 
                                             String feedback=FeedBackcontroller.text;
                                             FirebaseFirestore firestore=FirebaseFirestore.instance;
-
+                                            Timestamp timestamp = Timestamp.now();
                                             Map<String, dynamic> userData = {
                                               'Userid': uid,
                                               'Feedback': feedback,
+                                              'Timestamp': timestamp,
 
                                             };
                                             firestore.collection("Feedback").add(userData);
@@ -375,18 +399,8 @@ class _DashboardState extends State<Dashboard> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              "Clicked Tracking",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => Tracking()));
+
                       },
                       child: Container(
                         margin: EdgeInsets.all(10),
@@ -443,18 +457,8 @@ class _DashboardState extends State<Dashboard> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              "Clicked Previous Records",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => Records()));
+
                       },
                       child: Container(
                         margin: EdgeInsets.all(10),
@@ -541,7 +545,7 @@ class _DashboardState extends State<Dashboard> {
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Image.asset(
-                                  'assets/police-line.png',
+                                  'assets/chat.png',
                                   // Replace with your image path
                                   fit: BoxFit.cover,
                                 ),
@@ -552,7 +556,7 @@ class _DashboardState extends State<Dashboard> {
                             Expanded(
                               flex: 3, // 30% of the available space
                               child: Text(
-                                'Not Decided',
+                                'Chat',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
